@@ -21,8 +21,8 @@ export default function ProfileScreen() {
     setIsSaving(true);
     try {
       await api.post(`/users/${USER_ID}/goals`, {
-        target_calories: parseFloat(calGoal),
-        target_protein_grams: parseFloat(proGoal)
+        calorie_goal: parseFloat(calGoal),
+        protein_goal_g: parseFloat(proGoal)
       });
       await refreshData();
       alert('Goals updated!');
