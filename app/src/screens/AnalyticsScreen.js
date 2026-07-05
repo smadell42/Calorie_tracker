@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
 import { BarChart, LineChart } from 'react-native-chart-kit';
 import { api, USER_ID } from '../services/api';
@@ -12,9 +13,11 @@ export default function AnalyticsScreen() {
   const [weightData, setWeightData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchAnalytics();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      fetchAnalytics();
+    }, [])
+  );
 
   const fetchAnalytics = async () => {
     setIsLoading(true);
