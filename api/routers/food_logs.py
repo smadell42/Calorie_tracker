@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from api.database import get_db
 from api.models import FoodItem, FoodLog, User
-from api.schemas import FoodLogCreate, FoodLogResponse
+from api.schemas import FoodLogCreate, FoodLogResponse, FoodLogUpdate
 from api.utils import compute_from_100g, normalize_per_100g
 
 router = APIRouter(prefix="/api/users/{user_id}/food-logs", tags=["Food Logs"])
@@ -173,6 +173,38 @@ def get_food_log(user_id: int, log_id: int, db: Session = Depends(get_db)):
     )
     if not log:
         raise HTTPException(status_code=404, detail="Food log not found")
+    return _build_response(log)
+
+
+@router.put("/{log_id}", response_model=FoodLogResponse)
+def update_food_log(user_id: int, log_id: int, data: FoodLogUpdate, db: Session = Depends(get_db)):
+    """Update quantity of an existing food log and recalculate macros."""
+    _verify_user(user_id, db)
+
+    log = (
+        db.query(FoodLog)
+        .filter(FoodLog.id == log_id, FoodLog.user_id == user_id)
+        .first()
+    )
+    if not log:
+        raise HTTPException(status_code=404, detail="Food log not found")
+
+    # If the food item is linked, recalculate calories and protein
+    if log.food_item:
+        log.calories = compute_from_100g(log.food_item.calories_per_100g, data.quantity_grams)
+        log.protein_grams = compute_from_100g(log.food_item.protein_per_100g, data.quantity_grams)
+    else:
+        # Fallback if no underlying food_item (e.g. legacy logs), scale linearly
+        ratio = data.quantity_grams / log.quantity_grams if log.quantity_grams else 1
+        log.calories = log.calories * ratio
+        log.protein_grams = (log.protein_grams or 0) * ratio
+
+    log.quantity_grams = data.quantity_grams
+    if data.notes is not None:
+        log.notes = data.notes
+
+    db.commit()
+    db.refresh(log)
     return _build_response(log)
 
 

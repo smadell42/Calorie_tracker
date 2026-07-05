@@ -102,6 +102,11 @@ class FoodLogCreate(BaseModel):
     notes: str | None = None
 
 
+class FoodLogUpdate(BaseModel):
+    quantity_grams: float = Field(..., gt=0, description="New amount consumed in grams")
+    notes: str | None = None
+
+
 class FoodLogResponse(BaseModel):
     id: int
     food_item_id: int | None
